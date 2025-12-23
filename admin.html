@@ -7,12 +7,10 @@
 </head>
 <body style="font-family:system-ui; padding:16px; max-width:720px;">
   <h1>Admin</h1>
-  <p>Team slug (example: <code>ravens-wrestling
-</code>)</p>
+  <p>Team slug (example: <code>ravens-wrestling</code>)</p>
 
   <label>Team Slug<br>
-    <input id="slug" style="width:100%; padding:10px;" value="ravens-wrestling
-">
+    <input id="slug" style="width:100%; padding:10px;" value="ravens-wrestling">
   </label><br><br>
 
   <label>Admin Token<br>
@@ -23,6 +21,11 @@
 
   <h2>Add Athlete</h2>
   <label>Name<br><input id="a_name" style="width:100%; padding:10px;"></label><br><br>
+
+  <label>Weight Class (ex: 138, 145, 152)<br>
+    <input id="a_weight" style="width:100%; padding:10px;">
+  </label><br><br>
+
   <label>Wins<br><input id="a_wins" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
   <label>Losses<br><input id="a_losses" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
   <button id="addAthlete" style="padding:10px 14px;">Save Athlete</button>
@@ -33,6 +36,31 @@
   <label>Title<br><input id="v_title" style="width:100%; padding:10px;"></label><br><br>
   <label>YouTube URL or ID<br><input id="v_youtube" style="width:100%; padding:10px;"></label><br><br>
   <button id="addVideo" style="padding:10px 14px;">Save Video</button>
+
+  <hr style="margin:22px 0;">
+
+  <h2>Add Schedule Event</h2>
+  <label>Date (YYYY-MM-DD)<br>
+    <input id="s_date" style="width:100%; padding:10px;" placeholder="2026-01-05">
+  </label><br><br>
+
+  <label>Title<br>
+    <input id="s_title" style="width:100%; padding:10px;" placeholder="Dual vs Lane Tech">
+  </label><br><br>
+
+  <label>Opponent (optional)<br>
+    <input id="s_opp" style="width:100%; padding:10px;" placeholder="Lane Tech">
+  </label><br><br>
+
+  <label>Location (optional)<br>
+    <input id="s_loc" style="width:100%; padding:10px;" placeholder="Intrinsic Downtown Gym">
+  </label><br><br>
+
+  <label>Notes (optional)<br>
+    <input id="s_notes" style="width:100%; padding:10px;" placeholder="Weigh-ins 4:30pm">
+  </label><br><br>
+
+  <button id="addSchedule" style="padding:10px 14px;">Save Schedule Event</button>
 
   <pre id="out" style="margin-top:18px; background:#f5f5f5; padding:12px; overflow:auto;"></pre>
 
@@ -59,6 +87,7 @@ document.getElementById('addAthlete').onclick = async () => {
     const slug = document.getElementById('slug').value.trim();
     const payload = {
       name: document.getElementById('a_name').value,
+      weight_class: document.getElementById('a_weight').value,
       wins: document.getElementById('a_wins').value,
       losses: document.getElementById('a_losses').value
     };
@@ -78,6 +107,23 @@ document.getElementById('addVideo').onclick = async () => {
     };
     const text = await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
     out("Video saved ✅\n" + text);
+  } catch (e) {
+    out("Error ❌\n" + e);
+  }
+};
+
+document.getElementById('addSchedule').onclick = async () => {
+  try {
+    const slug = document.getElementById('slug').value.trim();
+    const payload = {
+      event_date: document.getElementById('s_date').value,
+      title: document.getElementById('s_title').value,
+      opponent: document.getElementById('s_opp').value,
+      location: document.getElementById('s_loc').value,
+      notes: document.getElementById('s_notes').value
+    };
+    const text = await post(`/api/team/${encodeURIComponent(slug)}/schedule`, payload);
+    out("Schedule saved ✅\n" + text);
   } catch (e) {
     out("Error ❌\n" + e);
   }
