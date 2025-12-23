@@ -172,9 +172,18 @@ async function post(path, payload) {
   return text;
 }
 
+async function getJson(path) {
+  const res = await fetch(path);
+  const text = await res.text();
+  if (!res.ok) throw new Error(res.status + " " + text);
+  return JSON.parse(text);
+}
+
+function slugVal(){ return document.getElementById('slug').value.trim(); }
+
 document.getElementById('addAthlete').onclick = async () => {
   try {
-    const slug = document.getElementById('slug').value.trim();
+    const slug = slugVal();
     const payload = {
       name: document.getElementById('a_name').value,
       weight_class: document.getElementById('a_weight').value,
@@ -183,28 +192,24 @@ document.getElementById('addAthlete').onclick = async () => {
     };
     const text = await post(`/api/team/${encodeURIComponent(slug)}/athlete`, payload);
     out("Athlete saved ✅\n" + text);
-  } catch (e) {
-    out("Error ❌\n" + e);
-  }
+  } catch (e) { out("Error ❌\n" + e); }
 };
 
 document.getElementById('addVideo').onclick = async () => {
   try {
-    const slug = document.getElementById('slug').value.trim();
+    const slug = slugVal();
     const payload = {
       title: document.getElementById('v_title').value,
       youtube: document.getElementById('v_youtube').value
     };
     const text = await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
     out("Video saved ✅\n" + text);
-  } catch (e) {
-    out("Error ❌\n" + e);
-  }
+  } catch (e) { out("Error ❌\n" + e); }
 };
 
 document.getElementById('addSchedule').onclick = async () => {
   try {
-    const slug = document.getElementById('slug').value.trim();
+    const slug = slugVal();
     const payload = {
       event_date: document.getElementById('s_date').value,
       title: document.getElementById('s_title').value,
@@ -214,11 +219,84 @@ document.getElementById('addSchedule').onclick = async () => {
     };
     const text = await post(`/api/team/${encodeURIComponent(slug)}/schedule`, payload);
     out("Schedule saved ✅\n" + text);
+  } catch (e) { out("Error ❌\n" + e); }
+};
+
+// ✅ PASTE STARTS HERE (Manage/Delete logic)
+async function refreshLists() {
+  const slug = slugVal();
+
+  const a = await getJson(`/api/team/${encodeURIComponent(slug)}/athletes`);
+  const v = await getJson(`/api/team/${encodeURIComponent(slug)}/videos`);
+  const s = await getJson(`/api/team/${encodeURIComponent(slug)}/schedule-list`);
+
+  document.getElementById('listAthletes').innerHTML =
+    (a.athletes || []).map(x => `
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
+        <div><b>${x.name}</b> ${x.weight_class ? `(${x.weight_class})` : ''} — ${x.wins}-${x.losses}</div>
+        <button data-id="${x.id}" class="delAthlete">Delete</button>
+      </div>
+    `).join('') || '<div style="color:#666;">No athletes</div>';
+
+  document.getElementById('listVideos').innerHTML =
+    (v.videos || []).map(x => `
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
+        <div><b>${x.title}</b> — ${x.youtube_id}</div>
+        <button data-id="${x.id}" class="delVideo">Delete</button>
+      </div>
+    `).join('') || '<div style="color:#666;">No videos</div>';
+
+  document.getElementById('listSchedule').innerHTML =
+    (s.schedule || []).map(x => `
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
+        <div><b>${x.event_date}</b> — ${x.title}</div>
+        <button data-id="${x.id}" class="delSchedule">Delete</button>
+      </div>
+    `).join('') || '<div style="color:#666;">No schedule events</div>';
+
+  // wire delete buttons
+  document.querySelectorAll('.delAthlete').forEach(btn => btn.onclick = async () => {
+    if (!confirm("Delete this athlete?")) return;
+    try {
+      await post(`/api/team/${encodeURIComponent(slug)}/athlete-delete`, { id: btn.dataset.id });
+      out("Deleted athlete ✅");
+      await refreshLists();
+    } catch (e) { out("Error ❌\n" + e); }
+  });
+
+  document.querySelectorAll('.delVideo').forEach(btn => btn.onclick = async () => {
+    if (!confirm("Delete this video?")) return;
+    try {
+      await post(`/api/team/${encodeURIComponent(slug)}/video-delete`, { id: btn.dataset.id });
+      out("Deleted video ✅");
+      await refreshLists();
+    } catch (e) { out("Error ❌\n" + e); }
+  });
+
+  document.querySelectorAll('.delSchedule').forEach(btn => btn.onclick = async () => {
+    if (!confirm("Delete this schedule event?")) return;
+    try {
+      await post(`/api/team/${encodeURIComponent(slug)}/schedule-delete`, { id: btn.dataset.id });
+      out("Deleted schedule event ✅");
+      await refreshLists();
+    } catch (e) { out("Error ❌\n" + e); }
+  });
+}
+
+document.getElementById('refresh').onclick = async () => {
+  try {
+    await refreshLists();
+    out("Lists refreshed ✅");
   } catch (e) {
     out("Error ❌\n" + e);
   }
 };
+
+// optional auto-load
+setTimeout(() => { refreshLists().catch(()=>{}); }, 200);
+// ✅ PASTE ENDS HERE
 </script>
+
 </body>
 </html>
 
