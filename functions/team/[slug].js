@@ -9,17 +9,12 @@ export async function onRequest({ params }) {
   <title>Team - ${slug}</title>
 </head>
 <body style="font-family:system-ui; padding:16px;">
-<img id="logo"
-     alt="Team logo"
-     style="width:90px;height:90px;border-radius:14px;object-fit:contain;background:#fff;padding:6px;display:none;border:1px solid rgba(0,0,0,.08);margin-bottom:10px;">
+
+  <img id="logo"
+       alt="Team logo"
+       style="width:90px;height:90px;border-radius:14px;object-fit:contain;background:#fff;padding:6px;display:none;border:1px solid rgba(0,0,0,.08);margin-bottom:10px;">
 
   <h1 id="name">Loading…</h1>
-  const logo = document.getElementById('logo');
-if (data.team.logo_url) {
-  logo.src = data.team.logo_url;
-  logo.style.display = 'block';
-}
-
 
   <h2>Roster / Records</h2>
   <div id="roster"></div>
@@ -31,7 +26,20 @@ if (data.team.logo_url) {
 (async () => {
   const slug = ${JSON.stringify(slug)};
   const res = await fetch('/api/team/' + encodeURIComponent(slug));
+  if (!res.ok) {
+    document.getElementById('name').textContent = 'Team not found';
+    return;
+  }
   const data = await res.json();
+
+  // ✅ LOGO (must be inside script, after data exists)
+  const logo = document.getElementById('logo');
+  if (data.team.logo_url) {
+    logo.src = data.team.logo_url;
+    logo.style.display = 'block';
+  } else {
+    logo.style.display = 'none';
+  }
 
   document.getElementById('name').textContent =
     data.team.team_name + ' — Season ' + data.team.season_year;
