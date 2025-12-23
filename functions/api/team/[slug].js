@@ -18,10 +18,15 @@ export async function onRequest({ params, env }) {
     .all();
 
   // 3) Videos
-  const videos = await env.DB
-    .prepare("SELECT id, team_id, title, youtube_id FROM videos WHERE team_id = ? ORDER BY id DESC")
-    .bind(team.id)
-    .all();
+  const videos = await env.DB.prepare(`
+  SELECT v.id, v.team_id, v.title, v.youtube_id, v.athlete_id,
+         a.name AS athlete_name
+  FROM videos v
+  LEFT JOIN athletes a ON a.id = v.athlete_id
+  WHERE v.team_id = ?
+  ORDER BY v.id DESC
+`).bind(team.id).all();
+
 
   // 4) Schedule
   const schedule = await env.DB
