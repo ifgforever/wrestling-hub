@@ -61,110 +61,33 @@
   </label><br><br>
 
   <button id="addSchedule" style="padding:10px 14px;">Save Schedule Event</button>
-  <hr style="margin:22px 0;">
-
-<h2>Manage (Delete)</h2>
-<button id="refresh" style="padding:10px 14px;">Refresh Lists</button>
-
-<h3 style="margin-top:14px;">Athletes</h3>
-<div id="listAthletes"></div>
-
-<h3 style="margin-top:14px;">Videos</h3>
-<div id="listVideos"></div>
-
-<h3 style="margin-top:14px;">Schedule</h3>
-<div id="listSchedule"></div>
-  <!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin - Wrestling Hub</title>
-</head>
-<body style="font-family:system-ui; padding:16px; max-width:720px;">
-  <h1>Admin</h1>
-  <p>Team slug (example: <code>ravens-wrestling</code>)</p>
-
-  <label>Team Slug<br>
-    <input id="slug" style="width:100%; padding:10px;" value="ravens-wrestling">
-  </label><br><br>
-
-  <label>Admin Token<br>
-    <input id="token" type="password" style="width:100%; padding:10px;" placeholder="paste ADMIN_TOKEN">
-  </label>
 
   <hr style="margin:22px 0;">
 
-  <h2>Add Athlete</h2>
-  <label>Name<br><input id="a_name" style="width:100%; padding:10px;"></label><br><br>
+  <h2>Manage (Delete)</h2>
+  <button id="refresh" style="padding:10px 14px;">Refresh Lists</button>
 
-  <label>Weight Class (ex: 138, 145, 152)<br>
-    <input id="a_weight" style="width:100%; padding:10px;">
-  </label><br><br>
+  <h3 style="margin-top:14px;">Athletes</h3>
+  <div id="listAthletes"></div>
 
-  <label>Wins<br><input id="a_wins" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
-  <label>Losses<br><input id="a_losses" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
-  <button id="addAthlete" style="padding:10px 14px;">Save Athlete</button>
+  <h3 style="margin-top:14px;">Videos</h3>
+  <div id="listVideos"></div>
 
-  <hr style="margin:22px 0;">
-
-  <h2>Add Video</h2>
-  <label>Title<br><input id="v_title" style="width:100%; padding:10px;"></label><br><br>
-  <label>YouTube URL or ID<br><input id="v_youtube" style="width:100%; padding:10px;"></label><br><br>
-  <button id="addVideo" style="padding:10px 14px;">Save Video</button>
-
-  <hr style="margin:22px 0;">
-
-  <h2>Add Schedule Event</h2>
-  <label>Date (YYYY-MM-DD)<br>
-    <input id="s_date" style="width:100%; padding:10px;" placeholder="2026-01-05">
-  </label><br><br>
-
-  <label>Title<br>
-    <input id="s_title" style="width:100%; padding:10px;" placeholder="Dual vs Lane Tech">
-  </label><br><br>
-
-  <label>Opponent (optional)<br>
-    <input id="s_opp" style="width:100%; padding:10px;" placeholder="Lane Tech">
-  </label><br><br>
-
-  <label>Location (optional)<br>
-    <input id="s_loc" style="width:100%; padding:10px;" placeholder="Intrinsic Downtown Gym">
-  </label><br><br>
-
-  <label>Notes (optional)<br>
-    <input id="s_notes" style="width:100%; padding:10px;" placeholder="Weigh-ins 4:30pm">
-  </label><br><br>
-
-  <button id="addSchedule" style="padding:10px 14px;">Save Schedule Event</button>
-  <hr style="margin:22px 0;">
-
-<h2>Manage (Delete)</h2>
-<button id="refresh" style="padding:10px 14px;">Refresh Lists</button>
-
-<h3 style="margin-top:14px;">Athletes</h3>
-<div id="listAthletes"></div>
-
-<h3 style="margin-top:14px;">Videos</h3>
-<div id="listVideos"></div>
-
-<h3 style="margin-top:14px;">Schedule</h3>
-<div id="listSchedule"></div>
-
+  <h3 style="margin-top:14px;">Schedule</h3>
+  <div id="listSchedule"></div>
 
   <pre id="out" style="margin-top:18px; background:#f5f5f5; padding:12px; overflow:auto;"></pre>
 
 <script>
 const out = (msg) => document.getElementById('out').textContent = msg;
 
+function slugVal(){ return document.getElementById('slug').value.trim(); }
+
 async function post(path, payload) {
   const token = document.getElementById('token').value.trim();
   const res = await fetch(path, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-admin-token': token
-    },
+    headers: { 'content-type': 'application/json', 'x-admin-token': token },
     body: JSON.stringify(payload)
   });
   const text = await res.text();
@@ -179,8 +102,7 @@ async function getJson(path) {
   return JSON.parse(text);
 }
 
-function slugVal(){ return document.getElementById('slug').value.trim(); }
-
+// Add athlete
 document.getElementById('addAthlete').onclick = async () => {
   try {
     const slug = slugVal();
@@ -192,9 +114,11 @@ document.getElementById('addAthlete').onclick = async () => {
     };
     const text = await post(`/api/team/${encodeURIComponent(slug)}/athlete`, payload);
     out("Athlete saved ✅\n" + text);
+    await refreshLists();
   } catch (e) { out("Error ❌\n" + e); }
 };
 
+// Add video
 document.getElementById('addVideo').onclick = async () => {
   try {
     const slug = slugVal();
@@ -204,9 +128,11 @@ document.getElementById('addVideo').onclick = async () => {
     };
     const text = await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
     out("Video saved ✅\n" + text);
+    await refreshLists();
   } catch (e) { out("Error ❌\n" + e); }
 };
 
+// Add schedule
 document.getElementById('addSchedule').onclick = async () => {
   try {
     const slug = slugVal();
@@ -219,10 +145,11 @@ document.getElementById('addSchedule').onclick = async () => {
     };
     const text = await post(`/api/team/${encodeURIComponent(slug)}/schedule`, payload);
     out("Schedule saved ✅\n" + text);
+    await refreshLists();
   } catch (e) { out("Error ❌\n" + e); }
 };
 
-// ✅ PASTE STARTS HERE (Manage/Delete logic)
+// Manage / Delete
 async function refreshLists() {
   const slug = slugVal();
 
@@ -287,86 +214,11 @@ document.getElementById('refresh').onclick = async () => {
   try {
     await refreshLists();
     out("Lists refreshed ✅");
-  } catch (e) {
-    out("Error ❌\n" + e);
-  }
+  } catch (e) { out("Error ❌\n" + e); }
 };
 
-// optional auto-load
+// auto-load lists
 setTimeout(() => { refreshLists().catch(()=>{}); }, 200);
-// ✅ PASTE ENDS HERE
-</script>
-
-</body>
-</html>
-
-
-  <pre id="out" style="margin-top:18px; background:#f5f5f5; padding:12px; overflow:auto;"></pre>
-
-<script>
-const out = (msg) => document.getElementById('out').textContent = msg;
-
-async function post(path, payload) {
-  const token = document.getElementById('token').value.trim();
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-admin-token': token
-    },
-    body: JSON.stringify(payload)
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(res.status + " " + text);
-  return text;
-}
-
-document.getElementById('addAthlete').onclick = async () => {
-  try {
-    const slug = document.getElementById('slug').value.trim();
-    const payload = {
-      name: document.getElementById('a_name').value,
-      weight_class: document.getElementById('a_weight').value,
-      wins: document.getElementById('a_wins').value,
-      losses: document.getElementById('a_losses').value
-    };
-    const text = await post(`/api/team/${encodeURIComponent(slug)}/athlete`, payload);
-    out("Athlete saved ✅\n" + text);
-  } catch (e) {
-    out("Error ❌\n" + e);
-  }
-};
-
-document.getElementById('addVideo').onclick = async () => {
-  try {
-    const slug = document.getElementById('slug').value.trim();
-    const payload = {
-      title: document.getElementById('v_title').value,
-      youtube: document.getElementById('v_youtube').value
-    };
-    const text = await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
-    out("Video saved ✅\n" + text);
-  } catch (e) {
-    out("Error ❌\n" + e);
-  }
-};
-
-document.getElementById('addSchedule').onclick = async () => {
-  try {
-    const slug = document.getElementById('slug').value.trim();
-    const payload = {
-      event_date: document.getElementById('s_date').value,
-      title: document.getElementById('s_title').value,
-      opponent: document.getElementById('s_opp').value,
-      location: document.getElementById('s_loc').value,
-      notes: document.getElementById('s_notes').value
-    };
-    const text = await post(`/api/team/${encodeURIComponent(slug)}/schedule`, payload);
-    out("Schedule saved ✅\n" + text);
-  } catch (e) {
-    out("Error ❌\n" + e);
-  }
-};
 </script>
 </body>
 </html>
