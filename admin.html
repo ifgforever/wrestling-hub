@@ -19,7 +19,8 @@
 
   <hr style="margin:22px 0;">
 
-  <h2>Add Athlete</h2>
+  <h2 id="athleteFormTitle">Add Athlete</h2>
+  <input id="a_id" type="hidden">
   <label>Name<br><input id="a_name" style="width:100%; padding:10px;"></label><br><br>
 
   <label>Weight Class (ex: 138, 145, 152)<br>
@@ -28,11 +29,13 @@
 
   <label>Wins<br><input id="a_wins" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
   <label>Losses<br><input id="a_losses" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
-  <button id="addAthlete" style="padding:10px 14px;">Save Athlete</button>
+  <button id="saveAthlete" style="padding:10px 14px;">Save Athlete</button>
+  <button id="cancelAthlete" style="padding:10px 14px; display:none;">Cancel</button>
 
   <hr style="margin:22px 0;">
 
-  <h2>Add Video</h2>
+  <h2 id="videoFormTitle">Add Video</h2>
+  <input id="v_id" type="hidden">
   <label>Title<br><input id="v_title" style="width:100%; padding:10px;"></label><br><br>
 
   <label>Wrestler (optional)<br>
@@ -42,11 +45,13 @@
   </label><br><br>
 
   <label>YouTube URL or ID<br><input id="v_youtube" style="width:100%; padding:10px;"></label><br><br>
-  <button id="addVideo" style="padding:10px 14px;">Save Video</button>
+  <button id="saveVideo" style="padding:10px 14px;">Save Video</button>
+  <button id="cancelVideo" style="padding:10px 14px; display:none;">Cancel</button>
 
   <hr style="margin:22px 0;">
 
-  <h2>Add Schedule Event</h2>
+  <h2 id="scheduleFormTitle">Add Schedule Event</h2>
+  <input id="s_id" type="hidden">
   <label>Date (YYYY-MM-DD)<br>
     <input id="s_date" style="width:100%; padding:10px;" placeholder="2026-01-05">
   </label><br><br>
@@ -67,11 +72,12 @@
     <input id="s_notes" style="width:100%; padding:10px;" placeholder="Weigh-ins 4:30pm">
   </label><br><br>
 
-  <button id="addSchedule" style="padding:10px 14px;">Save Schedule Event</button>
+  <button id="saveSchedule" style="padding:10px 14px;">Save Schedule Event</button>
+  <button id="cancelSchedule" style="padding:10px 14px; display:none;">Cancel</button>
 
   <hr style="margin:22px 0;">
 
-  <h2>Manage (Delete)</h2>
+  <h2>Manage</h2>
   <button id="refresh" style="padding:10px 14px;">Refresh Lists</button>
 
   <h3 style="margin-top:14px;">Athletes</h3>
@@ -109,26 +115,75 @@ async function getJson(path) {
   return JSON.parse(text);
 }
 
-// Add athlete
-document.getElementById('addAthlete').onclick = async () => {
+// Athlete form reset
+function resetAthleteForm() {
+  document.getElementById('a_id').value = '';
+  document.getElementById('a_name').value = '';
+  document.getElementById('a_weight').value = '';
+  document.getElementById('a_wins').value = '0';
+  document.getElementById('a_losses').value = '0';
+  document.getElementById('athleteFormTitle').textContent = 'Add Athlete';
+  document.getElementById('cancelAthlete').style.display = 'none';
+}
+
+// Video form reset
+function resetVideoForm() {
+  document.getElementById('v_id').value = '';
+  document.getElementById('v_title').value = '';
+  document.getElementById('v_youtube').value = '';
+  document.getElementById('v_athlete').value = '';
+  document.getElementById('videoFormTitle').textContent = 'Add Video';
+  document.getElementById('cancelVideo').style.display = 'none';
+}
+
+// Schedule form reset
+function resetScheduleForm() {
+  document.getElementById('s_id').value = '';
+  document.getElementById('s_date').value = '';
+  document.getElementById('s_title').value = '';
+  document.getElementById('s_opp').value = '';
+  document.getElementById('s_loc').value = '';
+  document.getElementById('s_notes').value = '';
+  document.getElementById('scheduleFormTitle').textContent = 'Add Schedule Event';
+  document.getElementById('cancelSchedule').style.display = 'none';
+}
+
+// Save athlete (add or update)
+document.getElementById('saveAthlete').onclick = async () => {
   try {
     const slug = slugVal();
+    const id = document.getElementById('a_id').value;
     const payload = {
       name: document.getElementById('a_name').value,
       weight_class: document.getElementById('a_weight').value,
       wins: document.getElementById('a_wins').value,
       losses: document.getElementById('a_losses').value
     };
-    const text = await post(`/api/team/${encodeURIComponent(slug)}/athlete`, payload);
-    out("Athlete saved ✅\n" + text);
+    
+    if (id) {
+      payload.id = id;
+      await post(`/api/team/${encodeURIComponent(slug)}/athlete-update`, payload);
+      out("Athlete updated ✅");
+    } else {
+      await post(`/api/team/${encodeURIComponent(slug)}/athlete`, payload);
+      out("Athlete saved ✅");
+    }
+    
+    resetAthleteForm();
     await refreshLists();
   } catch (e) { out("Error ❌\n" + e); }
 };
 
-// Add video (✅ includes athlete_id)
-document.getElementById('addVideo').onclick = async () => {
+document.getElementById('cancelAthlete').onclick = () => {
+  resetAthleteForm();
+  out("Cancelled");
+};
+
+// Save video (add or update)
+document.getElementById('saveVideo').onclick = async () => {
   try {
     const slug = slugVal();
+    const id = document.getElementById('v_id').value;
     const athleteVal = document.getElementById('v_athlete').value;
 
     const payload = {
@@ -137,16 +192,30 @@ document.getElementById('addVideo').onclick = async () => {
       athlete_id: athleteVal ? Number(athleteVal) : null
     };
 
-    const text = await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
-    out("Video saved ✅\n" + text);
+    if (id) {
+      payload.id = id;
+      await post(`/api/team/${encodeURIComponent(slug)}/video-update`, payload);
+      out("Video updated ✅");
+    } else {
+      await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
+      out("Video saved ✅");
+    }
+    
+    resetVideoForm();
     await refreshLists();
   } catch (e) { out("Error ❌\n" + e); }
 };
 
-// Add schedule
-document.getElementById('addSchedule').onclick = async () => {
+document.getElementById('cancelVideo').onclick = () => {
+  resetVideoForm();
+  out("Cancelled");
+};
+
+// Save schedule (add or update)
+document.getElementById('saveSchedule').onclick = async () => {
   try {
     const slug = slugVal();
+    const id = document.getElementById('s_id').value;
     const payload = {
       event_date: document.getElementById('s_date').value,
       title: document.getElementById('s_title').value,
@@ -154,22 +223,36 @@ document.getElementById('addSchedule').onclick = async () => {
       location: document.getElementById('s_loc').value,
       notes: document.getElementById('s_notes').value
     };
-    const text = await post(`/api/team/${encodeURIComponent(slug)}/schedule`, payload);
-    out("Schedule saved ✅\n" + text);
+    
+    if (id) {
+      payload.id = id;
+      await post(`/api/team/${encodeURIComponent(slug)}/schedule-update`, payload);
+      out("Schedule updated ✅");
+    } else {
+      await post(`/api/team/${encodeURIComponent(slug)}/schedule`, payload);
+      out("Schedule saved ✅");
+    }
+    
+    resetScheduleForm();
     await refreshLists();
   } catch (e) { out("Error ❌\n" + e); }
 };
 
-// Manage / Delete
+document.getElementById('cancelSchedule').onclick = () => {
+  resetScheduleForm();
+  out("Cancelled");
+};
+
+// Manage / Delete / Edit
 async function refreshLists() {
   const slug = slugVal();
 
   const a = await getJson(`/api/team/${encodeURIComponent(slug)}/athletes`);
   const teamData = await getJson(`/api/team/${encodeURIComponent(slug)}`);
-const v = { videos: teamData.videos };
+  const v = { videos: teamData.videos };
   const s = await getJson(`/api/team/${encodeURIComponent(slug)}/schedule-list`);
 
-  // ✅ fill wrestler dropdown for videos
+  // fill wrestler dropdown for videos
   const sel = document.getElementById('v_athlete');
   if (sel) {
     sel.innerHTML =
@@ -183,7 +266,10 @@ const v = { videos: teamData.videos };
     (a.athletes || []).map(x => `
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
         <div><b>${x.name}</b> ${x.weight_class ? `(${x.weight_class})` : ''} — ${x.wins}-${x.losses}</div>
-        <button data-id="${x.id}" class="delAthlete">Delete</button>
+        <div style="display:flex;gap:6px;">
+          <button data-id="${x.id}" class="editAthlete" style="padding:6px 10px;">Edit</button>
+          <button data-id="${x.id}" class="delAthlete" style="padding:6px 10px;">Delete</button>
+        </div>
       </div>
     `).join('') || '<div style="color:#666;">No athletes</div>';
 
@@ -191,7 +277,10 @@ const v = { videos: teamData.videos };
     (v.videos || []).map(x => `
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
         <div><b>${x.title}</b> — ${x.youtube_id}${x.athlete_name ? ` <span style="color:#666;">( ${x.athlete_name} )</span>` : ''}</div>
-        <button data-id="${x.id}" class="delVideo">Delete</button>
+        <div style="display:flex;gap:6px;">
+          <button data-id="${x.id}" class="editVideo" style="padding:6px 10px;">Edit</button>
+          <button data-id="${x.id}" class="delVideo" style="padding:6px 10px;">Delete</button>
+        </div>
       </div>
     `).join('') || '<div style="color:#666;">No videos</div>';
 
@@ -199,11 +288,62 @@ const v = { videos: teamData.videos };
     (s.schedule || []).map(x => `
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
         <div><b>${x.event_date}</b> — ${x.title}</div>
-        <button data-id="${x.id}" class="delSchedule">Delete</button>
+        <div style="display:flex;gap:6px;">
+          <button data-id="${x.id}" class="editSchedule" style="padding:6px 10px;">Edit</button>
+          <button data-id="${x.id}" class="delSchedule" style="padding:6px 10px;">Delete</button>
+        </div>
       </div>
     `).join('') || '<div style="color:#666;">No schedule events</div>';
 
-  // wire delete buttons
+  // Wire edit athlete buttons
+  document.querySelectorAll('.editAthlete').forEach(btn => btn.onclick = async () => {
+    const athlete = a.athletes.find(x => x.id == btn.dataset.id);
+    if (!athlete) return;
+    
+    document.getElementById('a_id').value = athlete.id;
+    document.getElementById('a_name').value = athlete.name;
+    document.getElementById('a_weight').value = athlete.weight_class || '';
+    document.getElementById('a_wins').value = athlete.wins;
+    document.getElementById('a_losses').value = athlete.losses;
+    document.getElementById('athleteFormTitle').textContent = 'Edit Athlete';
+    document.getElementById('cancelAthlete').style.display = 'inline-block';
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Wire edit video buttons
+  document.querySelectorAll('.editVideo').forEach(btn => btn.onclick = async () => {
+    const video = v.videos.find(x => x.id == btn.dataset.id);
+    if (!video) return;
+    
+    document.getElementById('v_id').value = video.id;
+    document.getElementById('v_title').value = video.title;
+    document.getElementById('v_youtube').value = video.youtube_id;
+    document.getElementById('v_athlete').value = video.athlete_id || '';
+    document.getElementById('videoFormTitle').textContent = 'Edit Video';
+    document.getElementById('cancelVideo').style.display = 'inline-block';
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Wire edit schedule buttons
+  document.querySelectorAll('.editSchedule').forEach(btn => btn.onclick = async () => {
+    const event = s.schedule.find(x => x.id == btn.dataset.id);
+    if (!event) return;
+    
+    document.getElementById('s_id').value = event.id;
+    document.getElementById('s_date').value = event.event_date;
+    document.getElementById('s_title').value = event.title;
+    document.getElementById('s_opp').value = event.opponent || '';
+    document.getElementById('s_loc').value = event.location || '';
+    document.getElementById('s_notes').value = event.notes || '';
+    document.getElementById('scheduleFormTitle').textContent = 'Edit Schedule Event';
+    document.getElementById('cancelSchedule').style.display = 'inline-block';
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Wire delete buttons
   document.querySelectorAll('.delAthlete').forEach(btn => btn.onclick = async () => {
     if (!confirm("Delete this athlete?")) return;
     try {
