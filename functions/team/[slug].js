@@ -130,6 +130,9 @@ function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;'
 </script>
 </body>
 </html>`;
+const schedule = await env.DB.prepare(
+  "SELECT * FROM schedule WHERE team_id = ? ORDER BY event_date ASC, id ASC"
+).bind(team.id).all();
 
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" }});
 }
