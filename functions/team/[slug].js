@@ -27,8 +27,8 @@ export async function onRequest({ params }) {
     .logo{
       width:84px;height:84px;border-radius:16px;object-fit:contain;
       background:#fff; padding:8px;
-      border:3px solid var(--accent);           /* ✅ gold ring */
-      box-shadow: 0 0 0 3px rgba(0,0,0,.25);    /* subtle outer ring */
+      border:3px solid var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,0,0,.25);
     }
     h1{ margin:0; font-size:26px; line-height:1.15; }
     .meta{ margin-top:6px; color:var(--muted); font-size:14px; }
@@ -136,7 +136,7 @@ function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;'
       </div>
     \`).join('') || '<div class="meta">No events yet.</div>';
 
-  // roster (✅ show weight class)
+  // roster
   document.getElementById('rosterCount').textContent = (data.athletes?.length || 0) + ' athletes';
   document.getElementById('roster').innerHTML =
     (data.athletes || []).map(a => \`
@@ -149,12 +149,15 @@ function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;'
       </div>
     \`).join('') || '<div class="meta">No athletes yet.</div>';
 
-  // videos
+  // videos (✅ now shows athlete name)
   document.getElementById('videoCount').textContent = (data.videos?.length || 0) + ' videos';
   document.getElementById('videos').innerHTML =
     (data.videos || []).map(v => \`
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <div><b>\${esc(v.title)}</b></div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div><b>\${esc(v.title)}</b></div>
+          \${v.athlete_name ? '<div class="tag" style="font-size:11px;">' + esc(v.athlete_name) + '</div>' : ''}
+        </div>
         <iframe src="https://www.youtube.com/embed/\${esc(v.youtube_id)}" allowfullscreen></iframe>
       </div>
     \`).join('') || '<div class="meta">No videos yet.</div>';
