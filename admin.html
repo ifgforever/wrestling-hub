@@ -34,6 +34,13 @@
 
   <h2>Add Video</h2>
   <label>Title<br><input id="v_title" style="width:100%; padding:10px;"></label><br><br>
+
+  <label>Wrestler (optional)<br>
+    <select id="v_athlete" style="width:100%; padding:10px;">
+      <option value="">Team / All</option>
+    </select>
+  </label><br><br>
+
   <label>YouTube URL or ID<br><input id="v_youtube" style="width:100%; padding:10px;"></label><br><br>
   <button id="addVideo" style="padding:10px 14px;">Save Video</button>
 
@@ -118,14 +125,18 @@ document.getElementById('addAthlete').onclick = async () => {
   } catch (e) { out("Error ❌\n" + e); }
 };
 
-// Add video
+// Add video (✅ includes athlete_id)
 document.getElementById('addVideo').onclick = async () => {
   try {
     const slug = slugVal();
+    const athleteVal = document.getElementById('v_athlete').value;
+
     const payload = {
       title: document.getElementById('v_title').value,
-      youtube: document.getElementById('v_youtube').value
+      youtube: document.getElementById('v_youtube').value,
+      athlete_id: athleteVal ? Number(athleteVal) : null
     };
+
     const text = await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
     out("Video saved ✅\n" + text);
     await refreshLists();
@@ -157,6 +168,16 @@ async function refreshLists() {
   const v = await getJson(`/api/team/${encodeURIComponent(slug)}/videos`);
   const s = await getJson(`/api/team/${encodeURIComponent(slug)}/schedule-list`);
 
+  // ✅ fill wrestler dropdown for videos
+  const sel = document.getElementById('v_athlete');
+  if (sel) {
+    sel.innerHTML =
+      '<option value="">Team / All</option>' +
+      (a.athletes || []).map(x =>
+        `<option value="${x.id}">${x.name}${x.weight_class ? ' ('+x.weight_class+')' : ''}</option>`
+      ).join('');
+  }
+
   document.getElementById('listAthletes').innerHTML =
     (a.athletes || []).map(x => `
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
@@ -168,7 +189,7 @@ async function refreshLists() {
   document.getElementById('listVideos').innerHTML =
     (v.videos || []).map(x => `
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
-        <div><b>${x.title}</b> — ${x.youtube_id}</div>
+        <div><b>${x.title}</b> — ${x.youtube_id}${x.athlete_name ? ` <span style="color:#666;">( ${x.athlete_name} )</span>` : ''}</div>
         <button data-id="${x.id}" class="delVideo">Delete</button>
       </div>
     `).join('') || '<div style="color:#666;">No videos</div>';
