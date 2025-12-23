@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - Wrestling Hub</title>
+</head>
+<body style="font-family:system-ui; padding:16px; max-width:720px;">
+  <h1>Admin</h1>
+  <p>Team slug (example: <code>lincoln-wrestling</code>)</p>
+
+  <label>Team Slug<br>
+    <input id="slug" style="width:100%; padding:10px;" value="lincoln-wrestling">
+  </label><br><br>
+
+  <label>Admin Token<br>
+    <input id="token" type="password" style="width:100%; padding:10px;" placeholder="paste ADMIN_TOKEN">
+  </label>
+
+  <hr style="margin:22px 0;">
+
+  <h2>Add Athlete</h2>
+  <label>Name<br><input id="a_name" style="width:100%; padding:10px;"></label><br><br>
+  <label>Wins<br><input id="a_wins" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
+  <label>Losses<br><input id="a_losses" type="number" style="width:100%; padding:10px;" value="0"></label><br><br>
+  <button id="addAthlete" style="padding:10px 14px;">Save Athlete</button>
+
+  <hr style="margin:22px 0;">
+
+  <h2>Add Video</h2>
+  <label>Title<br><input id="v_title" style="width:100%; padding:10px;"></label><br><br>
+  <label>YouTube URL or ID<br><input id="v_youtube" style="width:100%; padding:10px;"></label><br><br>
+  <button id="addVideo" style="padding:10px 14px;">Save Video</button>
+
+  <pre id="out" style="margin-top:18px; background:#f5f5f5; padding:12px; overflow:auto;"></pre>
+
+<script>
+const out = (msg) => document.getElementById('out').textContent = msg;
+
+async function post(path, payload) {
+  const token = document.getElementById('token').value.trim();
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-admin-token': token
+    },
+    body: JSON.stringify(payload)
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(res.status + " " + text);
+  return text;
+}
+
+document.getElementById('addAthlete').onclick = async () => {
+  try {
+    const slug = document.getElementById('slug').value.trim();
+    const payload = {
+      name: document.getElementById('a_name').value,
+      wins: document.getElementById('a_wins').value,
+      losses: document.getElementById('a_losses').value
+    };
+    const text = await post(`/api/team/${encodeURIComponent(slug)}/athlete`, payload);
+    out("Athlete saved ✅\n" + text);
+  } catch (e) {
+    out("Error ❌\n" + e);
+  }
+};
+
+document.getElementById('addVideo').onclick = async () => {
+  try {
+    const slug = document.getElementById('slug').value.trim();
+    const payload = {
+      title: document.getElementById('v_title').value,
+      youtube: document.getElementById('v_youtube').value
+    };
+    const text = await post(`/api/team/${encodeURIComponent(slug)}/video`, payload);
+    out("Video saved ✅\n" + text);
+  } catch (e) {
+    out("Error ❌\n" + e);
+  }
+};
+</script>
+</body>
+</html>
