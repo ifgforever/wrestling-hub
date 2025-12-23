@@ -26,12 +26,14 @@ export async function onRequest({ params }) {
     }
     .logo{
       width:84px;height:84px;border-radius:16px;object-fit:contain;
-      background:#fff; padding:8px; border:1px solid rgba(0,0,0,.12);
+      background:#fff; padding:8px;
+      border:3px solid var(--accent);           /* ✅ gold ring */
+      box-shadow: 0 0 0 3px rgba(0,0,0,.25);    /* subtle outer ring */
     }
     h1{ margin:0; font-size:26px; line-height:1.15; }
-    .meta{ margin-top:6px; color:var(--muted); }
+    .meta{ margin-top:6px; color:var(--muted); font-size:14px; }
     .sections{ display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px; }
-    @media(min-width: 900px){ .sections{ grid-template-columns: 340px 1fr; } }
+    @media(min-width: 900px){ .sections{ grid-template-columns: 360px 1fr; } }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; }
     .titleRow{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
     .tag{
@@ -42,12 +44,12 @@ export async function onRequest({ params }) {
       white-space:nowrap;
     }
     .list{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
-    .row{ display:flex; justify-content:space-between; gap:10px; align-items:center; padding:10px; border-radius:12px;
+    .row{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:10px; border-radius:12px;
       border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03);
     }
+    .left{ display:flex; flex-direction:column; gap:4px; }
     iframe{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; }
     .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-top:10px; }
-    a{ color:inherit; }
   </style>
 </head>
 <body>
@@ -61,12 +63,22 @@ export async function onRequest({ params }) {
     </div>
 
     <div class="sections">
-      <div class="card">
-        <div class="titleRow">
-          <div><b>Roster</b></div>
-          <div class="tag" id="rosterCount"></div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="card">
+          <div class="titleRow">
+            <div><b>Schedule</b></div>
+            <div class="tag" id="scheduleCount"></div>
+          </div>
+          <div class="list" id="schedule"></div>
         </div>
-        <div class="list" id="roster"></div>
+
+        <div class="card">
+          <div class="titleRow">
+            <div><b>Roster</b></div>
+            <div class="tag" id="rosterCount"></div>
+          </div>
+          <div class="list" id="roster"></div>
+        </div>
       </div>
 
       <div class="card">
@@ -107,12 +119,32 @@ function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;'
     logo.style.display = '';
   }
 
-  // roster
+  // schedule
+  document.getElementById('scheduleCount').textContent = (data.schedule?.length || 0) + ' events';
+  document.getElementById('schedule').innerHTML =
+    (data.schedule || []).map(e => \`
+      <div class="row">
+        <div class="left">
+          <div><b>\${esc(e.event_date)} — \${esc(e.title)}</b></div>
+          <div class="meta">
+            \${e.opponent ? 'Opponent: ' + esc(e.opponent) : ''}
+            \${(e.opponent && e.location) ? ' · ' : ''}
+            \${e.location ? 'Location: ' + esc(e.location) : ''}
+            \${e.notes ? '<div style="margin-top:4px;">' + esc(e.notes) + '</div>' : ''}
+          </div>
+        </div>
+      </div>
+    \`).join('') || '<div class="meta">No events yet.</div>';
+
+  // roster (✅ show weight class)
   document.getElementById('rosterCount').textContent = (data.athletes?.length || 0) + ' athletes';
   document.getElementById('roster').innerHTML =
     (data.athletes || []).map(a => \`
       <div class="row">
-        <div><b>\${esc(a.name)}</b></div>
+        <div class="left">
+          <div><b>\${esc(a.name)}</b></div>
+          \${a.weight_class ? '<div class="meta">Weight: ' + esc(a.weight_class) + '</div>' : ''}
+        </div>
         <div class="tag">\${a.wins}-\${a.losses}</div>
       </div>
     \`).join('') || '<div class="meta">No athletes yet.</div>';
@@ -130,9 +162,6 @@ function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;'
 </script>
 </body>
 </html>`;
-const schedule = await env.DB.prepare(
-  "SELECT * FROM schedule WHERE team_id = ? ORDER BY event_date ASC, id ASC"
-).bind(team.id).all();
 
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" }});
 }
