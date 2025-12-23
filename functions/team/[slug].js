@@ -35,7 +35,7 @@ export async function onRequest({ params }) {
     .sections{ display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px; }
     @media(min-width: 900px){ .sections{ grid-template-columns: 360px 1fr; } }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; }
-    .titleRow{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .titleRow{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
     .tag{
       font-size:12px; padding:4px 10px; border-radius:999px;
       border:1px solid color-mix(in oklab, var(--accent) 55%, transparent);
@@ -50,6 +50,10 @@ export async function onRequest({ params }) {
     .left{ display:flex; flex-direction:column; gap:4px; }
     iframe{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; }
     .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-top:10px; }
+    select{ 
+      padding:6px 10px; border-radius:8px; border:1px solid var(--border); 
+      background:var(--card); color:var(--text); font-size:12px;
+    }
   </style>
 </head>
 <body>
@@ -84,7 +88,12 @@ export async function onRequest({ params }) {
       <div class="card">
         <div class="titleRow">
           <div><b>Videos</b></div>
-          <div class="tag" id="videoCount"></div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="videoFilter">
+              <option value="all">All Videos</option>
+            </select>
+            <div class="tag" id="videoCount"></div>
+          </div>
         </div>
         <div class="grid" id="videos"></div>
       </div>
@@ -94,6 +103,34 @@ export async function onRequest({ params }) {
 <script>
 function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+let allVideos = [];
+let allSchedule = [];
+
+function renderVideos() {
+  const filter = document.getElementById('videoFilter').value;
+  
+  let filteredVideos = allVideos;
+  if (filter !== 'all') {
+    const scheduleId = parseInt(filter);
+    filteredVideos = allVideos.filter(v => v.schedule_id === scheduleId);
+  }
+  
+  document.getElementById('videoCount').textContent = filteredVideos.length + ' videos';
+  document.getElementById('videos').innerHTML =
+    filteredVideos.map(v => \`
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+          <div style="flex:1;"><b>\${esc(v.title)}</b></div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            \${v.athlete_name ? '<div class="tag" style="font-size:11px;">' + esc(v.athlete_name) + '</div>' : ''}
+            \${v.schedule_title ? '<div class="tag" style="font-size:11px; background:color-mix(in oklab, #3b82f6 18%, transparent); border-color:color-mix(in oklab, #3b82f6 55%, transparent); color:color-mix(in oklab, #3b82f6 85%, white);">' + esc(v.schedule_date) + '</div>' : ''}
+          </div>
+        </div>
+        <iframe src="https://www.youtube.com/embed/\${esc(v.youtube_id)}" allowfullscreen></iframe>
+      </div>
+    \`).join('') || '<div class="meta">No videos yet.</div>';
+}
+
 (async () => {
   const slug = ${JSON.stringify(slug)};
   const res = await fetch('/api/team/' + encodeURIComponent(slug));
@@ -102,6 +139,9 @@ function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;'
     return;
   }
   const data = await res.json();
+
+  allVideos = data.videos || [];
+  allSchedule = data.schedule || [];
 
   // theme
   if (data.team.primary_color) document.documentElement.style.setProperty('--bg', data.team.primary_color);
@@ -149,18 +189,20 @@ function esc(s){return (s??"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;'
       </div>
     \`).join('') || '<div class="meta">No athletes yet.</div>';
 
-  // videos (✅ now shows athlete name)
-  document.getElementById('videoCount').textContent = (data.videos?.length || 0) + ' videos';
-  document.getElementById('videos').innerHTML =
-    (data.videos || []).map(v => \`
-      <div style="display:flex; flex-direction:column; gap:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-          <div><b>\${esc(v.title)}</b></div>
-          \${v.athlete_name ? '<div class="tag" style="font-size:11px;">' + esc(v.athlete_name) + '</div>' : ''}
-        </div>
-        <iframe src="https://www.youtube.com/embed/\${esc(v.youtube_id)}" allowfullscreen></iframe>
-      </div>
-    \`).join('') || '<div class="meta">No videos yet.</div>';
+  // populate video filter dropdown with ALL schedule events (not just future)
+  const allScheduleRes = await fetch('/api/team/' + encodeURIComponent(slug) + '/schedule-all');
+  const allScheduleData = await allScheduleRes.ok ? await allScheduleRes.json() : { schedule: [] };
+  
+  const filterSelect = document.getElementById('videoFilter');
+  filterSelect.innerHTML = '<option value="all">All Videos</option>' +
+    (allScheduleData.schedule || []).map(s => 
+      \`<option value="\${s.id}">\${esc(s.event_date)} - \${esc(s.title)}</option>\`
+    ).join('');
+  
+  filterSelect.addEventListener('change', renderVideos);
+
+  // render videos initially
+  renderVideos();
 })();
 </script>
 </body>
