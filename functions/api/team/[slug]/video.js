@@ -43,6 +43,7 @@ export async function onRequestPost({ params, request, env }) {
   const title = (body.title || "").trim();
   const youtube_id = extractYouTubeId(body.youtube);
   const athlete_id = body.athlete_id ? Number(body.athlete_id) : null;
+  const schedule_id = body.schedule_id ? Number(body.schedule_id) : null;
 
   if (!title) return new Response("title required", { status: 400 });
   if (!youtube_id) return new Response("valid youtube URL or ID required", { status: 400 });
@@ -54,9 +55,16 @@ export async function onRequestPost({ params, request, env }) {
     if (!a) return new Response("athlete_id invalid for this team", { status: 400 });
   }
 
+  // If schedule_id is set, make sure it belongs to this team
+  if (schedule_id) {
+    const s = await env.DB.prepare("SELECT id FROM schedule WHERE id=? AND team_id=?")
+      .bind(schedule_id, team.id).first();
+    if (!s) return new Response("schedule_id invalid for this team", { status: 400 });
+  }
+
   await env.DB.prepare(
-    "INSERT INTO videos (team_id, title, youtube_id, athlete_id) VALUES (?, ?, ?, ?)"
-  ).bind(team.id, title, youtube_id, athlete_id).run();
+    "INSERT INTO videos (team_id, title, youtube_id, athlete_id, schedule_id) VALUES (?, ?, ?, ?, ?)"
+  ).bind(team.id, title, youtube_id, athlete_id, schedule_id).run();
 
   return Response.json({ ok: true });
 }

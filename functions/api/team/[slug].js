@@ -13,14 +13,17 @@ export async function onRequest({ params, env }) {
     .prepare("SELECT id, team_id, name, weight_class, wins, losses FROM athletes WHERE team_id = ? ORDER BY name ASC")
     .bind(team.id)
     .all();
-  // 3) Videos
+  // 3) Videos with athlete and schedule info
   const videos = await env.DB.prepare(`
-  SELECT v.id, v.team_id, v.title, v.youtube_id, v.athlete_id,
-         a.name AS athlete_name
+  SELECT v.id, v.team_id, v.title, v.youtube_id, v.athlete_id, v.schedule_id,
+         a.name AS athlete_name,
+         s.title AS schedule_title,
+         s.event_date AS schedule_date
   FROM videos v
   LEFT JOIN athletes a ON a.id = v.athlete_id
+  LEFT JOIN schedule s ON s.id = v.schedule_id
   WHERE v.team_id = ?
-  ORDER BY v.id DESC
+  ORDER BY s.event_date DESC, v.id DESC
 `).bind(team.id).all();
   // 4) Schedule - only future events
   const today = new Date().toISOString().split('T')[0];

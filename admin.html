@@ -44,6 +44,12 @@
     </select>
   </label><br><br>
 
+  <label>Event (optional)<br>
+    <select id="v_schedule" style="width:100%; padding:10px;">
+      <option value="">General / No Event</option>
+    </select>
+  </label><br><br>
+
   <label>YouTube URL or ID<br><input id="v_youtube" style="width:100%; padding:10px;"></label><br><br>
   <button id="saveVideo" style="padding:10px 14px;">Save Video</button>
   <button id="cancelVideo" style="padding:10px 14px; display:none;">Cancel</button>
@@ -132,6 +138,7 @@ function resetVideoForm() {
   document.getElementById('v_title').value = '';
   document.getElementById('v_youtube').value = '';
   document.getElementById('v_athlete').value = '';
+  document.getElementById('v_schedule').value = '';
   document.getElementById('videoFormTitle').textContent = 'Add Video';
   document.getElementById('cancelVideo').style.display = 'none';
 }
@@ -185,11 +192,13 @@ document.getElementById('saveVideo').onclick = async () => {
     const slug = slugVal();
     const id = document.getElementById('v_id').value;
     const athleteVal = document.getElementById('v_athlete').value;
+    const scheduleVal = document.getElementById('v_schedule').value;
 
     const payload = {
       title: document.getElementById('v_title').value,
       youtube: document.getElementById('v_youtube').value,
-      athlete_id: athleteVal ? Number(athleteVal) : null
+      athlete_id: athleteVal ? Number(athleteVal) : null,
+      schedule_id: scheduleVal ? Number(scheduleVal) : null
     };
 
     if (id) {
@@ -250,15 +259,25 @@ async function refreshLists() {
   const a = await getJson(`/api/team/${encodeURIComponent(slug)}/athletes`);
   const teamData = await getJson(`/api/team/${encodeURIComponent(slug)}`);
   const v = { videos: teamData.videos };
-  const s = await getJson(`/api/team/${encodeURIComponent(slug)}/schedule-list`);
+  const s = { schedule: teamData.schedule };
 
   // fill wrestler dropdown for videos
-  const sel = document.getElementById('v_athlete');
-  if (sel) {
-    sel.innerHTML =
+  const selAthlete = document.getElementById('v_athlete');
+  if (selAthlete) {
+    selAthlete.innerHTML =
       '<option value="">Team / All</option>' +
       (a.athletes || []).map(x =>
         `<option value="${x.id}">${x.name}${x.weight_class ? ' ('+x.weight_class+')' : ''}</option>`
+      ).join('');
+  }
+
+  // fill schedule dropdown for videos
+  const selSchedule = document.getElementById('v_schedule');
+  if (selSchedule) {
+    selSchedule.innerHTML =
+      '<option value="">General / No Event</option>' +
+      (s.schedule || []).map(x =>
+        `<option value="${x.id}">${x.event_date} - ${x.title}</option>`
       ).join('');
   }
 
@@ -276,7 +295,11 @@ async function refreshLists() {
   document.getElementById('listVideos').innerHTML =
     (v.videos || []).map(x => `
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
-        <div><b>${x.title}</b> — ${x.youtube_id}${x.athlete_name ? ` <span style="color:#666;">( ${x.athlete_name} )</span>` : ''}</div>
+        <div>
+          <b>${x.title}</b> — ${x.youtube_id}
+          ${x.athlete_name ? ` <span style="color:#666;">( ${x.athlete_name} )</span>` : ''}
+          ${x.schedule_title ? ` <span style="color:#0066cc;">[ ${x.schedule_date} - ${x.schedule_title} ]</span>` : ''}
+        </div>
         <div style="display:flex;gap:6px;">
           <button data-id="${x.id}" class="editVideo" style="padding:6px 10px;">Edit</button>
           <button data-id="${x.id}" class="delVideo" style="padding:6px 10px;">Delete</button>
@@ -320,6 +343,7 @@ async function refreshLists() {
     document.getElementById('v_title').value = video.title;
     document.getElementById('v_youtube').value = video.youtube_id;
     document.getElementById('v_athlete').value = video.athlete_id || '';
+    document.getElementById('v_schedule').value = video.schedule_id || '';
     document.getElementById('videoFormTitle').textContent = 'Edit Video';
     document.getElementById('cancelVideo').style.display = 'inline-block';
     
