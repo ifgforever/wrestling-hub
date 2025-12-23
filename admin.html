@@ -165,7 +165,8 @@ async function refreshLists() {
   const slug = slugVal();
 
   const a = await getJson(`/api/team/${encodeURIComponent(slug)}/athletes`);
-  const v = await getJson(`/api/team/${encodeURIComponent(slug)}/videos`);
+  const teamData = await getJson(`/api/team/${encodeURIComponent(slug)}`);
+const v = { videos: teamData.videos };
   const s = await getJson(`/api/team/${encodeURIComponent(slug)}/schedule-list`);
 
   // ✅ fill wrestler dropdown for videos
